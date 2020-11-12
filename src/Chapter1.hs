@@ -95,7 +95,7 @@ work, and maybe produce a value of a different type.
 
 Types can be _specific_ (like `Int`, `Integer`, `Double` or `Bool`) and they
 always start with an uppercase letter, or _polymorphic_ (aka general) specified
-through the variables – begin with the lowercase letter. The concept of
+through the variables – beginning with the lowercase letter. The concept of
 polymorphism is more sophisticated than working with concrete types, thus we
 won't dive too much into it in this chapter and will work with the concrete
 types for now.
@@ -209,31 +209,31 @@ So, the output in this example means that 'False' has type 'Bool'.
 > Try to guess first and then compare your expectations with GHCi output
 
 >>> :t True
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True :: Bool
 >>> :t 'a'
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+'a' :: Char
 >>> :t 42
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+42 :: Num p => p
 
 A pair of boolean and char:
 >>> :t (True, 'x')
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(True, 'x') :: (Bool, Char)
 
 Boolean negation:
 >>> :t not
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+not :: Bool -> Bool
 
 Boolean 'and' operator:
 >>> :t (&&)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(&&) :: Bool -> Bool -> Bool
 
 Addition of two numbers:
 >>> :t (+)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(+) :: Num a => a -> a -> a
 
 Maximum of two values:
 >>> :t max
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+max :: Ord a => a -> a -> a
 
 You might not understand each type at this moment, but don't worry! You've only
 started your Haskell journey. Types will become your friends soon.
@@ -269,7 +269,7 @@ form (operator goes __after__ the first argument), while ordinary functions are
 what-called __prefix__ form (the name goes first, before all arguments).
 
 ghci> :t add
-Add :: Int -> Int -> Int
+add :: Int -> Int -> Int
 ghci> :t (+)
 (+) :: Int -> Int -> Int
 ghci> add 1 2
@@ -301,43 +301,43 @@ expressions in GHCi
   functions and operators first. Remember this from the previous task? ;)
 
 >>> 1 + 2
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+3
 
 >>> 10 - 15
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+-5
 
 >>> 10 - (-5)  -- negative constants require ()
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+15
 
 >>> (3 + 5) < 10
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> True && False
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+False
 
 >>> 10 < 20 || 20 < 5
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> 2 ^ 10  -- power
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+1024
 
 >>> not False
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> div 20 3  -- integral division
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+6
 
 >>> mod 20 3  -- integral division remainder
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+2
 
 >>> max 4 10
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+10
 
 >>> min 5 (max 1 2)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+2
 
 >>> max (min 1 10) (min 5 7)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+5
 
 Because Haskell is a __statically-typed__ language, you see an error each time
 you try to mix values of different types in situations where you are not
@@ -365,7 +365,7 @@ Let's now check how they are defined and whether we can introduce our own.
 
 When defining a function in Haskell, you write its type signature on the first
 line, and then its body on the following line(s). The type signature should be
-written immediately from the start of a line. Haskell is __indentation-__ and
+written immediately from the start of a line. Haskell is a __indentation-__ and
 __layout-sensitive__ language, so this is important to keep in mind.
 
 For example, here is the type signature of a function that takes a 'Double' and
@@ -429,6 +429,7 @@ task is to specify the type of this function.
 49
 -}
 
+squareSum :: Int -> Int -> Int
 squareSum x y = (x + y) * (x + y)
 
 
@@ -449,7 +450,7 @@ Implement the function that takes an integer value and returns the next 'Int'.
   function body with the proper implementation.
 -}
 next :: Int -> Int
-next x = error "next: not implemented!"
+next x = x + 1
 
 {- |
 After you've implemented the function (or even during the implementation), you
@@ -489,8 +490,8 @@ Implement a function that returns the last digit of a given number.
   results. Or you can try to guess the function name, search for it and check
   whether it works for you!
 -}
--- DON'T FORGET TO SPECIFY THE TYPE IN HERE
-lastDigit n = error "lastDigit: Not implemented!"
+lastDigit :: Int -> Int
+lastDigit n = mod (abs n) 10
 
 
 {- |
@@ -520,7 +521,7 @@ branches because it is an expression and it must always return some value.
   satisfying the check will be returned and, therefore, evaluated.
 -}
 closestToZero :: Int -> Int -> Int
-closestToZero x y = error "closestToZero: not implemented!"
+closestToZero x y = if (abs x) < (abs y) then x else y
 
 
 {- |
@@ -554,7 +555,15 @@ value after "=" where the condition is true.
 Casual reminder about adding top-level type signatures for all functions :)
 -}
 
-mid x y z = error "mid: not implemented!"
+mid :: Int -> Int -> Int -> Int
+mid x y z
+  | ((x > y) && (x < z)) || ((x < y) && (x > z)) = x
+  | ((y > x) && (y < z)) || ((y < x) && (y > z)) = y
+  | ((z > x) && (z < y)) || ((z < x) && (z > y)) = z
+  | (x == y)                                     = x
+  | (x == z)                                     = x
+  | (y == z)                                     = y
+  | (x == y) && (y == z)                         = x
 
 {- |
 =⚔️= Task 8
@@ -568,8 +577,14 @@ True
 >>> isVowel 'x'
 False
 -}
-isVowel c = error "isVowel: not implemented!"
-
+isVowel :: Char -> Bool
+isVowel c
+  | c == 'a' =  True
+  | c == 'e' =  True
+  | c == 'i' =  True
+  | c == 'o' =  True
+  | c == 'u' =  True
+  | otherwise = False
 
 {- |
 == Local variables and functions
@@ -632,8 +647,10 @@ Try to introduce variables in this task (either with let-in or where) to avoid
 specifying complex expressions.
 -}
 
-sumLast2 n = error "sumLast2: Not implemented!"
-
+sumLast2 :: Int -> Int
+sumLast2 n = preLastDigit + (lastDigit n)
+  where
+    preLastDigit = lastDigit ((abs n) `div` 10)
 
 {- |
 =💣= Task 10*
@@ -653,8 +670,20 @@ You need to use recursion in this task. Feel free to return to it later, if you
 aren't ready for this boss yet!
 -}
 
-firstDigit n = error "firstDigit: Not implemented!"
+firstDigit :: Int -> Int
+firstDigit n =
+  if (n `div` 10) == 0 then
+    n
+  else 
+    firstDigit (n `div` 10)
 
+{-
+Questions to @vrom911 or @chshersh: Why does
+  make test-chapter1
+NOT end? The last line that I get is:
+      first digit big
+and then the test continues to run indefinitely!?
+-}
 
 {-
 You did it! Now it is time to open pull request with your changes

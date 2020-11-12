@@ -343,6 +343,11 @@ Define the Book product data type. You can take inspiration from our description
 of a book, but you are not limited only by the book properties we described.
 Create your own book type of your dreams!
 -}
+data Book = MkBook
+  { bookName :: String
+  , bookAuthor :: String
+  , bookPages :: Int
+  } deriving (Show)
 
 {- |
 =⚔️= Task 2
@@ -373,6 +378,63 @@ after the fight. The battle has the following possible outcomes:
    doesn't earn any money and keeps what they had before.
 
 -}
+
+{-
+  Can attack, drink a health potion, cast a spell to increase his defense.
+  Has health, attack, and defense
+-}
+data Knight = MkKnight
+  { knightName          :: String
+  , knightHealth        :: Int
+  , knightHealthPotions :: Int
+  , knightAttack        :: Int
+  , knightDefense       :: Int
+  , knightGold          :: Int
+  , knightActions       :: [KnightAction]
+  } deriving (Show, Eq)
+
+data KnightAction = KnightActionAttack
+                  | KnightActionDrinkHealthPotion
+                  | KnightActionCastSpell
+                  deriving (Show, Eq)
+
+{-
+  Can attack and run away.
+  Has health and attack.
+-}
+data Monster = MkMonster
+  { monsterName    :: String
+  , monsterHealth  :: Int
+  , monsterAttack  :: Int
+  , monsterGold    :: Int
+  , monsterActions :: [MonsterAction]
+  } deriving (Show, Eq)
+
+data MonsterAction = MonsterActionAttack
+                   | MonsterActionRunAway
+                   deriving (Show, Eq)
+
+fight :: Monster -> Knight -> Int
+fight m k =
+  if (monsterHealth monsterAfterBeingHit) >= 0 then
+    -- Monster survived
+    if (knightHealth knightAfterBeingHit) < 0 then
+      -- Monster defeats the knight
+      -1
+    else
+      -- Nobody wins, knight keeps the gold it had before
+      (knightGold k)
+  else
+    -- Knight wins and takes the loot from the monster
+    (knightGold k) + (monsterGold m)
+  where
+    knightAfterBeingHit :: Knight
+    knightAfterBeingHit =
+      k { knightHealth = (knightHealth k) - (monsterAttack m) }
+    
+    monsterAfterBeingHit :: Monster
+    monsterAfterBeingHit =
+      m { monsterHealth = (monsterHealth m) - (knightAttack k) }
 
 {- |
 =🛡= Sum types
@@ -459,6 +521,16 @@ and provide more flexibility when working with data types.
 Create a simple enumeration for the meal types (e.g. breakfast). The one who
 comes up with the most number of names wins the challenge. Use your creativity!
 -}
+data Meal = Breakfast
+          | SecondBreakfast
+          | Elevenses
+          | Brunch
+          | Lunch
+          | AfternoonTea
+          | HighTea
+          | Dinner
+          | Supper
+          deriving (Show)
 
 {- |
 =⚔️= Task 4
@@ -479,6 +551,90 @@ After defining the city, implement the following functions:
    complicated task, walls can be built only if the city has a castle
    and at least 10 living __people__ inside in all houses of the city totally.
 -}
+data City = CityWithCastle { cityCastle :: Castle
+                           , cityChurchOrLibrary :: ChurchOrLibrary
+                           , cityHouses :: [House] }
+          | CitySimple { cityChurchOrLibrary :: ChurchOrLibrary
+                       , cityHouses :: [House] }
+          deriving (Show)
+data Castle = CastleOnly { castleName :: String }
+            | CastleWithWall { castleName :: String, castleWall :: Wall }
+            deriving (Show)
+data Wall = Wall deriving (Show)
+data ChurchOrLibrary = Church
+                     | Library
+                     deriving (Show)
+data House = HouseSingle
+           | HouseCouple
+           | HouseThree
+           | HouseFour
+           deriving (Show)
+
+simpleCityWithAChurch :: City
+simpleCityWithAChurch =
+  CitySimple
+    Church
+    [ HouseFour
+    , HouseThree
+    , HouseCouple ]
+
+simpleCityWithALibrary :: City
+simpleCityWithALibrary =
+  CitySimple
+    Library
+    [ HouseThree
+    , HouseCouple
+    , HouseSingle ]
+
+buildCastle :: City -> String -> City
+buildCastle
+  (CityWithCastle castle church_or_library houses)
+  new_castle_name
+  = (CityWithCastle
+      castle { castleName = new_castle_name }
+      church_or_library
+      houses
+    )
+buildCastle
+  (CitySimple church_or_library houses)
+  new_castle_name
+  = (CityWithCastle
+      (CastleOnly new_castle_name)
+      church_or_library
+      houses
+    )
+
+buildHouse :: City -> City
+buildHouse (CityWithCastle castle church_or_library houses) =
+  (CityWithCastle castle church_or_library ((HouseSingle):houses))
+buildHouse (CitySimple church_or_library houses) =
+  (CitySimple church_or_library ((HouseSingle):houses))
+  
+buildWalls :: City -> City
+buildWalls city =
+  if numberOfCitizens >= 10 then
+    case city of
+      (CityWithCastle (CastleOnly castle_name) _ _) ->
+        -- Build a wall around the castle
+        city { cityCastle = CastleWithWall castle_name Wall }
+
+      (CitySimple _ _)                              ->
+        -- First Build a simple Castle and then add the wall
+        buildWalls (buildCastle city "New Castle")
+
+      _                                             ->
+        -- The city has already a wall, nothing to do
+        city
+  else
+    buildWalls (buildHouse city)
+  where
+    numberOfCitizens :: Int
+    numberOfCitizens =
+      sum (map numberOfPeopleInAHouse (cityHouses city))
+    numberOfPeopleInAHouse HouseSingle = 1
+    numberOfPeopleInAHouse HouseCouple = 2
+    numberOfPeopleInAHouse HouseThree  = 3
+    numberOfPeopleInAHouse HouseFour   = 4
 
 {-
 =🛡= Newtypes
@@ -561,21 +717,32 @@ introducing extra newtypes.
     implementation of the "hitPlayer" function at all!
 -}
 data Player = Player
-    { playerHealth    :: Int
-    , playerArmor     :: Int
-    , playerAttack    :: Int
-    , playerDexterity :: Int
-    , playerStrength  :: Int
+    { playerHealth    :: Health
+    , playerArmor     :: Armor
+    , playerAttack    :: Attack
+    , playerDexterity :: Dexterity
+    , playerStrength  :: Strength
     }
 
-calculatePlayerDamage :: Int -> Int -> Int
-calculatePlayerDamage attack strength = attack + strength
+newtype Health = Health Int deriving (Show)
+newtype Armor = Armor Int
+newtype Attack = Attack Int
+newtype Dexterity = Dexterity Int
+newtype Strength = Strength Int
+newtype Damage = Damage Int
+newtype Defense = Defense Int
 
-calculatePlayerDefense :: Int -> Int -> Int
-calculatePlayerDefense armor dexterity = armor * dexterity
+calculatePlayerDamage :: Attack -> Strength -> Damage
+calculatePlayerDamage (Attack attack) (Strength strength) =
+  (Damage (attack + strength))
 
-calculatePlayerHit :: Int -> Int -> Int -> Int
-calculatePlayerHit damage defense health = health + defense - damage
+calculatePlayerDefense :: Armor -> Dexterity -> Defense
+calculatePlayerDefense (Armor armor) (Dexterity dexterity) =
+  (Defense (armor * dexterity))
+
+calculatePlayerHit :: Damage -> Defense -> Health -> Health
+calculatePlayerHit (Damage damage) (Defense defense) (Health health) =
+  (Health (health + defense - damage))
 
 -- The second player hits first player and the new first player is returned
 hitPlayer :: Player -> Player -> Player
@@ -699,7 +866,7 @@ showEither (Right n) = "Right with number: " ++ show n
 @
 
 Now, after we covered polymorphic types, you are finally ready to learn how
-lists are actually defined in the Haskell world. Behold the might list type!
+lists are actually defined in the Haskell world. Behold the mighty list type!
 
 @
 data [] a
@@ -752,6 +919,9 @@ parametrise data types in places where values can be of any general type.
 🕯 HINT: 'Maybe' that some standard types we mentioned above are useful for
   maybe-treasure ;)
 -}
+data Treasure
+data Dragon x = Dragon x
+data Lair x = Lair (Dragon x) (Maybe Treasure)
 
 {-
 =🛡= Typeclasses
@@ -910,6 +1080,22 @@ Implement instances of "Append" for the following types:
 class Append a where
     append :: a -> a -> a
 
+newtype Gold = Gold Int deriving (Show)
+
+instance Append Gold where
+  append :: Gold -> Gold -> Gold
+  append (Gold x) (Gold y) = Gold (x + y)
+
+instance Append [a] where
+  append :: [a] -> [a] -> [a]
+  append l1 l2 = l1 ++ l2
+
+instance (Append a) => Append (Maybe a) where
+  append :: (Maybe a) -> (Maybe a) -> (Maybe a)
+  append (Just x) (Just y) = Just (append x y)
+  append (Just x) Nothing  = Just x
+  append Nothing  (Just y) = Just y
+  append Nothing  Nothing  = Nothing
 
 {-
 =🛡= Standard Typeclasses and Deriving
@@ -970,6 +1156,30 @@ implement the following functions:
 
 🕯 HINT: to implement this task, derive some standard typeclasses
 -}
+data DayOfWeek = Monday
+               | Tuesday
+               | Wednesday
+               | Thursday
+               | Friday
+               | Saturday
+               | Sunday
+               deriving (Show, Enum, Bounded, Eq, Ord)
+
+isWeekend :: DayOfWeek -> Bool
+isWeekend Saturday = True
+isWeekend Sunday   = True
+isWeekend _        = False
+
+nextDay :: DayOfWeek -> DayOfWeek
+nextDay d
+  | (d == (maxBound :: DayOfWeek)) = minBound :: DayOfWeek
+  | otherwise                      = succ d
+
+daysToParty :: DayOfWeek -> Int
+daysToParty d
+  | (d <= Friday) = (fromEnum Friday) - (fromEnum d)
+  | otherwise     =
+      (fromEnum Sunday) - (fromEnum d) + 1 + (daysToParty Monday)
 
 {-
 =💣= Task 9*
@@ -1006,6 +1216,233 @@ Implement data types and typeclasses, describing such a battle between two
 contestants, and write a function that decides the outcome of a fight!
 -}
 
+{-
+ PROBLEM:
+
+ If monsters can run away, then the knight is without an opponent and the
+ fight must end too, right? It does NOT end only if one fighter is dead.
+ Because if a monster runs away, the knight cannot fight it anymore, but the
+ fight should end too.
+
+ Unless the interpretation of monster's run away action is that the monster
+ "tries" to run away, but the next attack by the knight catches the monster up
+ again. However in this case the run-away action doesn't help the monster in
+ no way, it is the same as a do-nothing action.
+
+ I could look up the solution, but first I will try to implement by
+ interpreting the Monster's run-away action as a do-nothing action.
+-}
+
+{-
+Look at the Knight and Monster data types from the 2nd task. I extended them
+and reusing them for this task
+-}
+
+{-
+  Need to wrap the concrete Fighter types, because I couldn't figure out how
+  to write the bossFight function so that it can return either a Knight or a
+  Monster. In the end wrapping them seemed to be the only solution that I
+  could find.
+-}
+data FighterWrapper = FighterKnight Knight
+                    | FighterMonster Monster
+                    deriving (Show, Eq)
+
+class Fighter a where
+  -- Fighter a will do the next step when fighting fighter b and returns the
+  -- new fighter a and b. A and b do not have to be the same.
+  fighterDoNextStepInFightWith :: (Fighter b) => a -> b -> (a, b)
+  -- Check if the fighter is already dead
+  fighterIsDead :: a -> Bool
+  -- Adjust a fighter's well-being after an attack, i.e. adjust health
+  fighterSufferAnAttack :: a -> Int -> a
+  -- Wrap the fighter
+  fighterWrap :: a -> FighterWrapper
+  
+instance Fighter Knight where
+  {-
+    Monsters have only health and attack, while knights also have a defence. So when
+    knights are attacked, their health is decreased less, if they have more defence.
+    The fight ends when the health of one fighter becomes zero or less.
+  -}
+  fighterSufferAnAttack :: Knight -> Int -> Knight
+  fighterSufferAnAttack k attack =
+    k {
+      knightHealth =
+        if attack > (knightDefense k) then
+          -- The attack is bigger than the ability to fully defend,
+          -- therefore still losing health, by a weakened attack
+          (knightHealth k) - (attack - (knightDefense k))
+        else
+          -- The defense is bigger or the same as the attack, therefore the
+          -- health is not decreasing and stays the same
+          (knightHealth k)
+    , knightDefense =
+        if (knightDefense k) < attack then
+          -- The defense was completely depleted by the attack, the knight has
+          -- no defense any more
+          0
+        else
+          -- The defense is decreased by the attack
+          (knightDefense k) - attack
+    }
+
+  fighterDoNextStepInFightWith :: (Fighter b) => Knight -> b -> (Knight, b)
+  fighterDoNextStepInFightWith k f2 =
+    -- Get next action
+    let
+      ka = head (knightActions k)
+    in
+      case ka of
+        KnightActionAttack            ->
+          if (knightAttack k) > 0 then
+            -- Remove the number of attack
+            (
+              k {
+                knightAttack = (knightAttack k) - 1
+              , knightActions =
+                  tail (knightActions k) ++ [head (knightActions k)]
+              }
+            , (fighterSufferAnAttack f2 (knightAttack k))
+            )
+          else
+            -- The knight has no attack points any more, return the same
+            -- state. It is, as if the knight did not do anything
+            (
+              k {
+                knightActions =
+                  tail (knightActions k) ++ [head (knightActions k)]
+              }
+              , f2
+            )
+        KnightActionDrinkHealthPotion ->
+          -- Drink a health potion to increase the health, if still potions
+          -- are left
+          if (knightHealthPotions k) > 0 then
+            (
+              k {
+                knightHealth = (knightHealth k) * 2 
+              , knightActions =
+                  tail (knightActions k) ++ [head (knightActions k)]
+              , knightHealthPotions = (knightHealthPotions k) - 1
+              }
+            , f2
+            )
+          else
+            -- The knight has no health potions any more, return the same
+            -- state. It is, as if the knight did not do anything
+            (
+              k {
+                knightActions =
+                  tail (knightActions k) ++ [head (knightActions k)]
+              }
+              , f2
+            )
+        KnightActionCastSpell         ->
+          -- Cast a spell to increase the defense
+          (
+            k {
+              knightDefense = (knightDefense k) + 1
+            , knightActions =
+                tail (knightActions k) ++ [head (knightActions k)]
+            }
+          , f2
+          )
+          
+  fighterIsDead :: Knight -> Bool
+  fighterIsDead k = (knightHealth k) <= 0
+
+  fighterWrap :: Knight -> FighterWrapper
+  fighterWrap k = FighterKnight k
+
+instance Fighter Monster where
+  {-
+    Monsters have only health and attack...
+  -}
+  fighterSufferAnAttack :: Monster -> Int -> Monster
+  fighterSufferAnAttack m attack =
+    m { monsterHealth = (monsterHealth m) - attack }
+
+  fighterDoNextStepInFightWith :: (Fighter b) => Monster -> b -> (Monster, b)
+  fighterDoNextStepInFightWith m f2 =
+    -- Get next action
+    let
+      ma = head (monsterActions m)
+    in
+      case ma of
+        MonsterActionAttack            ->
+          if (monsterAttack m) > 0 then
+            -- Remove the number of attack
+            (
+              m {
+                monsterAttack = (monsterAttack m) - 1
+              , monsterActions = (tail (monsterActions m)) ++ [head (monsterActions m)]
+              }
+            , (fighterSufferAnAttack f2 (monsterAttack m))
+            )
+          else
+            -- The monster has no attack points any more, return the same
+            -- state. It is, as if it did not do anything
+            (
+              m {
+                monsterActions = (tail (monsterActions m)) ++ [head (monsterActions m)]
+              }
+            , f2
+            )
+        MonsterActionRunAway         ->
+          -- Well, this is a bit of a riddle. Because the fight will not end
+          -- if the monster runs away. The fight ends only if one of the
+          -- fighters is dead, i.e. hsa no health points any more.
+          -- Therefore the run away, is like "trying" to run away, but the
+          -- opponent will catch the monster with the next attack. So it is
+          -- like doing nothing. Therefore returning the same state
+          (
+            m {
+              monsterActions = (tail (monsterActions m)) ++ [head (monsterActions m)]
+            }
+          , f2
+          )
+          
+  fighterIsDead :: Monster -> Bool
+  fighterIsDead k = (monsterHealth k) <= 0
+
+  fighterWrap :: Monster -> FighterWrapper
+  fighterWrap m = FighterMonster m
+
+{-
+  The first fighter attacks the second fighter.
+  The fighters do their activities in turns until one of them wins.
+  The fight ends when the health of one fighter becomes zero or less.
+-}
+bossFight :: (Fighter a, Fighter b) => a -> b -> FighterWrapper
+bossFight f1 f2 = fst $ head $ bossFightWithHistory f1 f2 []
+
+bossFightWithHistory ::
+  (Fighter a, Fighter b) =>
+     a
+  -> b
+  -> [(FighterWrapper, FighterWrapper)]
+  -> [(FighterWrapper, FighterWrapper)]
+bossFightWithHistory f1 f2 acc
+  | ((fighterWrap f1) == (fighterWrap f2)) =
+      error "Cannot fight against yourself!"
+  | otherwise                              =
+      let
+        (new_f1, new_f2) = fighterDoNextStepInFightWith f1 f2
+      in
+        if fighterIsDead new_f1 then
+          -- Fighter f1 is dead, return the winner f2, followed by the dead
+          -- loser (just to see how he lost)
+          ((fighterWrap new_f2), (fighterWrap new_f1)) : acc
+        else
+          if fighterIsDead new_f2 then
+            -- Fighter f2 is dead, return the winner f1, followed by the dead
+            -- loser (just to see how he lost)
+            ((fighterWrap new_f1), (fighterWrap new_f2)) : acc
+          else
+            -- None of the fighters is dead, continue with the next step
+            -- oft the opponent
+            bossFightWithHistory new_f2 new_f1 (((fighterWrap new_f1), (fighterWrap new_f2)) : acc)
 
 {-
 You did it! Now it is time to open pull request with your changes
