@@ -672,10 +672,10 @@ aren't ready for this boss yet!
 
 firstDigit :: Int -> Int
 firstDigit n =
-  if (n `div` 10) == 0 then
-    n
+  if ((abs n) `div` 10) == 0 then
+    (abs n)
   else 
-    firstDigit (n `div` 10)
+    firstDigit ((abs n) `div` 10)
 
 {-
 Questions to @vrom911 or @chshersh: Why does
